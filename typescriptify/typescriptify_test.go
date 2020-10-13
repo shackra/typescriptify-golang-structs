@@ -441,6 +441,34 @@ func TestDateWithoutTags(t *testing.T) {
 	}
 }
 
+func TestAnonymousStructWithManagedType(t *testing.T) {
+	t.Parallel()
+	type MyStruct struct {
+		MyTime time.Time `json:"my_time"`
+	}
+	type Decimal struct {
+		Amount int
+	}
+	type Target struct {
+		MyStruct
+		Price Decimal `json:"price" ts_type:"Decimal"`
+	}
+
+	converter := New()
+	converter.CreateFromMethod = false
+	converter.CreateInterface = true
+	converter.BackupDir = ""
+
+	converter = converter.ManageType(time.Time{}, TypeOptions{TSType: "Date", TSTransform: "new Date(__VALUE__)"})
+	converter.Add(Target{})
+
+	desiredResult := `export interface Target {
+        my_time: Date;
+        price: Decimal;
+}`
+	testConverter(t, converter, false, desiredResult, nil)
+}
+
 func TestRecursive(t *testing.T) {
 	t.Parallel()
 	type Test struct {
